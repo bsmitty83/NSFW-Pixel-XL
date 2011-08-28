@@ -503,6 +503,12 @@ config SIGNATURE
 	  Digital signature verification. Currently only RSA is supported.
 	  Implementation is done using GnuPG MPI library
 
+config SNAPPY
+       tristate "Snappy compressor"
+       help
+          Add the snappy compressor. This is a reasonable compressor that
+	  compresses and decompresses extremly fast.
+
 #
 # libfdt files, only selected if needed.
 #
@@ -544,5 +550,6 @@ config QMI_ENCDEC_DEBUG
 
 config SBITMAP
 	bool
+
 
 endmenu

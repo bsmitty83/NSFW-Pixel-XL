@@ -76,7 +76,6 @@
 #endif
 
 #include <uapi/linux/android/binder.h>
-#include "binder_alloc.h"
 #include "binder_trace.h"
 
 static HLIST_HEAD(binder_deferred_list);

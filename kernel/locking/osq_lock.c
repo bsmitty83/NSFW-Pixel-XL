@@ -99,7 +99,33 @@ bool osq_lock(struct optimistic_spin_queue *lock)
 
 	prev = decode_cpu(old);
 	node->prev = prev;
-	ACCESS_ONCE(prev->next) = node;
+
+	/*
+	 * We need to avoid reordering of link updation sequence of osq.
+	 * A case in which the status of optimistic spin queue is
+	 * CPU6->CPU2 in which CPU6 has acquired the lock. At this point
+	 * if CPU0 comes in to acquire osq_lock, it will update the tail
+	 * count. After tail count update if CPU2 starts to unqueue itself
+	 * from optimistic spin queue, it will find updated tail count with
+	 * CPU0 and update CPU2 node->next to NULL in osq_wait_next(). If
+	 * reordering of following stores happen then prev->next where prev
+	 * being CPU2 would be updated to point to CPU0 node:
+	 *      node->prev = prev;
+	 *      WRITE_ONCE(prev->next, node);
+	 *
+	 * At this point if next instruction
+	 *      WRITE_ONCE(next->prev, prev);
+	 * in CPU2 path is committed before the update of CPU0 node->prev =
+	 * prev then CPU0 node->prev will point to CPU6 node. At this point
+	 * if CPU0 path's node->prev = prev is committed resulting in change
+	 * of CPU0 prev back to CPU2 node. CPU2 node->next is NULL, so if
+	 * CPU0 gets into unqueue path of osq_lock it will keep spinning
+	 * in infinite loop as condition prev->next == node will never be
+	 * true.
+	 */
+	smp_mb();
+
+	WRITE_ONCE(prev->next, node);
 
 	/*
 	 * Normally @prev is untouchable after the above store; because at that
@@ -110,7 +136,7 @@ bool osq_lock(struct optimistic_spin_queue *lock)
 	 * cmpxchg in an attempt to undo our queueing.
 	 */
 
-	while (!ACCESS_ONCE(node->locked)) {
+	while (!READ_ONCE(node->locked)) {
 		/*
 		 * If we need to reschedule bail... so we can block.
 		 */
@@ -149,7 +175,7 @@ unqueue:
 		 * Or we race against a concurrent unqueue()'s step-B, in which
 		 * case its step-C will write us a new @node->prev pointer.
 		 */
-		prev = ACCESS_ONCE(node->prev);
+		prev = READ_ONCE(node->prev);
 	}
 
 	/*
@@ -171,8 +197,8 @@ unqueue:
 	 * it will wait in Step-A.
 	 */
 
-	ACCESS_ONCE(next->prev) = prev;
-	ACCESS_ONCE(prev->next) = next;
+	WRITE_ONCE(next->prev, prev);
+	WRITE_ONCE(prev->next, next);
 
 	return false;
 }
@@ -194,11 +220,11 @@ void osq_unlock(struct optimistic_spin_queue *lock)
 	node = this_cpu_ptr(&osq_node);
 	next = xchg(&node->next, NULL);
 	if (next) {
-		ACCESS_ONCE(next->locked) = 1;
+		WRITE_ONCE(next->locked, 1);
 		return;
 	}
 
 	next = osq_wait_next(lock, node, NULL);
 	if (next)
-		ACCESS_ONCE(next->locked) = 1;
+		WRITE_ONCE(next->locked, 1);
 }

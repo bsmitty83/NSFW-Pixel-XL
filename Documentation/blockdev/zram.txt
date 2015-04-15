@@ -1,189 +1,160 @@
-zram: Compressed RAM based block devices
-----------------------------------------
+What:		/sys/block/zram<id>/disksize
+Date:		August 2010
+Contact:	Nitin Gupta <ngupta@vflare.org>
+Description:
+		The disksize file is read-write and specifies the disk size
+		which represents the limit on the *uncompressed* worth of data
+		that can be stored in this disk.
+		Unit: bytes
 
-* Introduction
+What:		/sys/block/zram<id>/initstate
+Date:		August 2010
+Contact:	Nitin Gupta <ngupta@vflare.org>
+Description:
+		The initstate file is read-only and shows the initialization
+		state of the device.
 
-The zram module creates RAM based block devices named /dev/zram<id>
-(<id> = 0, 1, ...). Pages written to these disks are compressed and stored
-in memory itself. These disks allow very fast I/O and compression provides
-good amounts of memory savings. Some of the usecases include /tmp storage,
-use as swap disks, various caches under /var and maybe many more :)
+What:		/sys/block/zram<id>/reset
+Date:		August 2010
+Contact:	Nitin Gupta <ngupta@vflare.org>
+Description:
+		The reset file is write-only and allows resetting the
+		device. The reset operation frees all the memory associated
+		with this device.
 
-Statistics for individual zram devices are exported through sysfs nodes at
-/sys/block/zram<id>/
+What:		/sys/block/zram<id>/num_reads
+Date:		August 2010
+Contact:	Nitin Gupta <ngupta@vflare.org>
+Description:
+		The num_reads file is read-only and specifies the number of
+		reads (failed or successful) done on this device.
 
-* Usage
+What:		/sys/block/zram<id>/num_writes
+Date:		August 2010
+Contact:	Nitin Gupta <ngupta@vflare.org>
+Description:
+		The num_writes file is read-only and specifies the number of
+		writes (failed or successful) done on this device.
 
-Following shows a typical sequence of steps for using zram.
+What:		/sys/block/zram<id>/invalid_io
+Date:		August 2010
+Contact:	Nitin Gupta <ngupta@vflare.org>
+Description:
+		The invalid_io file is read-only and specifies the number of
+		non-page-size-aligned I/O requests issued to this device.
 
-1) Load Module:
-	modprobe zram num_devices=4
-	This creates 4 devices: /dev/zram{0,1,2,3}
-	(num_devices parameter is optional. Default: 1)
+What:		/sys/block/zram<id>/failed_reads
+Date:		February 2014
+Contact:	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Description:
+		The failed_reads file is read-only and specifies the number of
+		failed reads happened on this device.
 
-2) Set max number of compression streams
-	Compression backend may use up to max_comp_streams compression streams,
-	thus allowing up to max_comp_streams concurrent compression operations.
-	By default, compression backend uses single compression stream.
+What:		/sys/block/zram<id>/failed_writes
+Date:		February 2014
+Contact:	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Description:
+		The failed_writes file is read-only and specifies the number of
+		failed writes happened on this device.
 
-	Examples:
-	#show max compression streams number
-	cat /sys/block/zram0/max_comp_streams
+What:		/sys/block/zram<id>/max_comp_streams
+Date:		February 2014
+Contact:	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Description:
+		The max_comp_streams file is read-write and specifies the
+		number of backend's zcomp_strm compression streams (number of
+		concurrent compress operations).
 
-	#set max compression streams number to 3
-	echo 3 > /sys/block/zram0/max_comp_streams
+What:		/sys/block/zram<id>/comp_algorithm
+Date:		February 2014
+Contact:	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Description:
+		The comp_algorithm file is read-write and lets to show
+		available and selected compression algorithms, change
+		compression algorithm selection.
 
-Note:
-In order to enable compression backend's multi stream support max_comp_streams
-must be initially set to desired concurrency level before ZRAM device
-initialisation. Once the device initialised as a single stream compression
-backend (max_comp_streams equals to 1), you will see error if you try to change
-the value of max_comp_streams because single stream compression backend
-implemented as a special case by lock overhead issue and does not support
-dynamic max_comp_streams. Only multi stream backend supports dynamic
-max_comp_streams adjustment.
+What:		/sys/block/zram<id>/notify_free
+Date:		August 2010
+Contact:	Nitin Gupta <ngupta@vflare.org>
+Description:
+		The notify_free file is read-only. Depending on device usage
+		scenario it may account a) the number of pages freed because
+		of swap slot free notifications or b) the number of pages freed
+		because of REQ_DISCARD requests sent by bio. The former ones
+		are sent to a swap block device when a swap slot is freed, which
+		implies that this disk is being used as a swap disk. The latter
+		ones are sent by filesystem mounted with discard option,
+		whenever some data blocks are getting discarded.
 
-3) Select compression algorithm
-	Using comp_algorithm device attribute one can see available and
-	currently selected (shown in square brackets) compression algortithms,
-	change selected compression algorithm (once the device is initialised
-	there is no way to change compression algorithm).
+What:		/sys/block/zram<id>/zero_pages
+Date:		August 2010
+Contact:	Nitin Gupta <ngupta@vflare.org>
+Description:
+		The zero_pages file is read-only and specifies number of zero
+		filled pages written to this disk. No memory is allocated for
+		such pages.
 
-	Examples:
-	#show supported compression algorithms
-	cat /sys/block/zram0/comp_algorithm
-	lzo [lz4]
+What:		/sys/block/zram<id>/orig_data_size
+Date:		August 2010
+Contact:	Nitin Gupta <ngupta@vflare.org>
+Description:
+		The orig_data_size file is read-only and specifies uncompressed
+		size of data stored in this disk. This excludes zero-filled
+		pages (zero_pages) since no memory is allocated for them.
+		Unit: bytes
 
-	#select lzo compression algorithm
-	echo lzo > /sys/block/zram0/comp_algorithm
+What:		/sys/block/zram<id>/compr_data_size
+Date:		August 2010
+Contact:	Nitin Gupta <ngupta@vflare.org>
+Description:
+		The compr_data_size file is read-only and specifies compressed
+		size of data stored in this disk. So, compression ratio can be
+		calculated using orig_data_size and this statistic.
+		Unit: bytes
 
-4) Set Disksize
-        Set disk size by writing the value to sysfs node 'disksize'.
-        The value can be either in bytes or you can use mem suffixes.
-        Examples:
-            # Initialize /dev/zram0 with 50MB disksize
-            echo $((50*1024*1024)) > /sys/block/zram0/disksize
+What:		/sys/block/zram<id>/mem_used_total
+Date:		August 2010
+Contact:	Nitin Gupta <ngupta@vflare.org>
+Description:
+		The mem_used_total file is read-only and specifies the amount
+		of memory, including allocator fragmentation and metadata
+		overhead, allocated for this disk. So, allocator space
+		efficiency can be calculated using compr_data_size and this
+		statistic.
+		Unit: bytes
 
-            # Using mem suffixes
-            echo 256K > /sys/block/zram0/disksize
-            echo 512M > /sys/block/zram0/disksize
-            echo 1G > /sys/block/zram0/disksize
+What:		/sys/block/zram<id>/mem_used_max
+Date:		August 2014
+Contact:	Minchan Kim <minchan@kernel.org>
+Description:
+		The mem_used_max file is read/write and specifies the amount
+		of maximum memory zram have consumed to store compressed data.
+		For resetting the value, you should write "0". Otherwise,
+		you could see -EINVAL.
+		Unit: bytes
 
-Note:
-There is little point creating a zram of greater than twice the size of memory
-since we expect a 2:1 compression ratio. Note that zram uses about 0.1% of the
-size of the disk when not in use so a huge zram is wasteful.
+What:		/sys/block/zram<id>/mem_limit
+Date:		August 2014
+Contact:	Minchan Kim <minchan@kernel.org>
+Description:
+		The mem_limit file is read/write and specifies the maximum
+		amount of memory ZRAM can use to store the compressed data.  The
+		limit could be changed in run time and "0" means disable the
+		limit.  No limit is the initial state.  Unit: bytes
 
-5) Set memory limit: Optional
-	Set memory limit by writing the value to sysfs node 'mem_limit'.
-	The value can be either in bytes or you can use mem suffixes.
-	In addition, you could change the value in runtime.
-	Examples:
-	    # limit /dev/zram0 with 50MB memory
-	    echo $((50*1024*1024)) > /sys/block/zram0/mem_limit
+What:		/sys/block/zram<id>/compact
+Date:		August 2015
+Contact:	Minchan Kim <minchan@kernel.org>
+Description:
+		The compact file is write-only and trigger compaction for
+		allocator zrm uses. The allocator moves some objects so that
+		it could free fragment space.
 
-	    # Using mem suffixes
-	    echo 256K > /sys/block/zram0/mem_limit
-	    echo 512M > /sys/block/zram0/mem_limit
-	    echo 1G > /sys/block/zram0/mem_limit
-
-	    # To disable memory limit
-	    echo 0 > /sys/block/zram0/mem_limit
-
-6) Activate:
-	mkswap /dev/zram0
-	swapon /dev/zram0
-
-	mkfs.ext4 /dev/zram1
-	mount /dev/zram1 /tmp
-
-7) Stats:
-Per-device statistics are exported as various nodes under /sys/block/zram<id>/
-
-A brief description of exported device attritbutes. For more details please
-read Documentation/ABI/testing/sysfs-block-zram.
-
-Name            access            description
-----            ------            -----------
-disksize          RW    show and set the device's disk size
-initstate         RO    shows the initialization state of the device
-reset             WO    trigger device reset
-num_reads         RO    the number of reads
-failed_reads      RO    the number of failed reads
-num_write         RO    the number of writes
-failed_writes     RO    the number of failed writes
-invalid_io        RO    the number of non-page-size-aligned I/O requests
-max_comp_streams  RW    the number of possible concurrent compress operations
-comp_algorithm    RW    show and change the compression algorithm
-notify_free       RO    the number of notifications to free pages (either
-                        slot free notifications or REQ_DISCARD requests)
-zero_pages        RO    the number of zero filled pages written to this disk
-orig_data_size    RO    uncompressed size of data stored in this disk
-compr_data_size   RO    compressed size of data stored in this disk
-mem_used_total    RO    the amount of memory allocated for this disk
-mem_used_max      RW    the maximum amount memory zram have consumed to
-                        store compressed data
-mem_limit         RW    the maximum amount of memory ZRAM can use to store
-                        the compressed data
-num_migrated      RO    the number of objects migrated migrated by compaction
-
-
-WARNING
-=======
-per-stat sysfs attributes are considered to be deprecated.
-The basic strategy is:
--- the existing RW nodes will be downgraded to WO nodes (in linux 4.11)
--- deprecated RO sysfs nodes will eventually be removed (in linux 4.11)
-
-The list of deprecated attributes can be found here:
-Documentation/ABI/obsolete/sysfs-block-zram
-
-Basically, every attribute that has its own read accessible sysfs node
-(e.g. num_reads) *AND* is accessible via one of the stat files (zram<id>/stat
-or zram<id>/io_stat or zram<id>/mm_stat) is considered to be deprecated.
-
-User space is advised to use the following files to read the device statistics.
-
-File /sys/block/zram<id>/stat
-
-Represents block layer statistics. Read Documentation/block/stat.txt for
-details.
-
-File /sys/block/zram<id>/io_stat
-
-The stat file represents device's I/O statistics not accounted by block
-layer and, thus, not available in zram<id>/stat file. It consists of a
-single line of text and contains the following stats separated by
-whitespace:
-	failed_reads
-	failed_writes
-	invalid_io
-	notify_free
-
-File /sys/block/zram<id>/mm_stat
-
-The stat file represents device's mm statistics. It consists of a single
-line of text and contains the following stats separated by whitespace:
-	orig_data_size
-	compr_data_size
-	mem_used_total
-	mem_limit
-	mem_used_max
-	zero_pages
-	num_migrated
-
-8) Deactivate:
-	swapoff /dev/zram0
-	umount /dev/zram1
-
-9) Reset:
-	Write any positive value to 'reset' sysfs node
-	echo 1 > /sys/block/zram0/reset
-	echo 1 > /sys/block/zram1/reset
-
-	This frees all the memory allocated for the given device and
-	resets the disksize to zero. You must set the disksize again
-	before reusing the device.
-
-Nitin Gupta
-ngupta@vflare.org
+What:		/sys/block/zram<id>/io_stat
+Date:		August 2015
+Contact:	Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Description:
+		The io_stat file is read-only and accumulates device's I/O
+		statistics not accounted by block layer. For example,
+		failed_reads, failed_writes, etc. File format is similar to
+		block layer statistics file format.

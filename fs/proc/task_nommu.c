@@ -175,10 +175,22 @@ static int nommu_vma_show(struct seq_file *m, struct vm_area_struct *vma,
 
 	if (file) {
 		seq_pad(m, ' ');
-		seq_path(m, &file->f_path, "");
-	} else if (mm && is_stack(priv, vma)) {
-		seq_pad(m, ' ');
-		seq_printf(m, "[stack]");
+		seq_file_path(m, file, "");
+	} else if (mm) {
+		pid_t tid = pid_of_stack(priv, vma, is_pid);
+
+		if (tid != 0) {
+			seq_pad(m, ' ');
+			/*
+			 * Thread stack in /proc/PID/task/TID/maps or
+			 * the main process stack.
+			 */
+			if (!is_pid || (vma->vm_start <= mm->start_stack &&
+			    vma->vm_end >= mm->start_stack))
+				seq_printf(m, "[stack]");
+			else
+				seq_printf(m, "[stack:%d]", tid);
+		}
 	}
 
 	seq_putc(m, '\n');

@@ -509,8 +509,13 @@ struct mem_size_stats {
 	unsigned long anonymous;
 	unsigned long anonymous_thp;
 	unsigned long swap;
+<<<<<<< HEAD
 	unsigned long nonlinear;
 	unsigned long first_vma_start;
+=======
+	unsigned long shared_hugetlb;
+	unsigned long private_hugetlb;
+>>>>>>> 25ee01a2fca0... mm: hugetlb: proc: add hugetlb-related fields to /proc/PID/smaps
 	u64 pss;
 	u64 pss_locked;
 	u64 swap_pss;
@@ -698,6 +703,35 @@ static void show_smap_vma_flags(struct seq_file *m, struct vm_area_struct *vma)
 	seq_putc(m, '\n');
 }
 
+#ifdef CONFIG_HUGETLB_PAGE
+static int smaps_hugetlb_range(pte_t *pte, unsigned long hmask,
+				 unsigned long addr, unsigned long end,
+				 struct mm_walk *walk)
+{
+	struct mem_size_stats *mss = walk->private;
+	struct vm_area_struct *vma = walk->vma;
+	struct page *page = NULL;
+
+	if (pte_present(*pte)) {
+		page = vm_normal_page(vma, addr, *pte);
+	} else if (is_swap_pte(*pte)) {
+		swp_entry_t swpent = pte_to_swp_entry(*pte);
+
+		if (is_migration_entry(swpent))
+			page = migration_entry_to_page(swpent);
+	}
+	if (page) {
+		int mapcount = page_mapcount(page);
+
+		if (mapcount >= 2)
+			mss->shared_hugetlb += huge_page_size(hstate_vma(vma));
+		else
+			mss->private_hugetlb += huge_page_size(hstate_vma(vma));
+	}
+	return 0;
+}
+#endif /* HUGETLB_PAGE */
+
 static int show_smap(struct seq_file *m, void *v, int is_pid)
 {
 	struct proc_maps_private *priv = m->private;
@@ -706,6 +740,9 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
 	struct mem_size_stats *mss;
 	struct mm_walk smaps_walk = {
 		.pmd_entry = smaps_pte_range,
+#ifdef CONFIG_HUGETLB_PAGE
+		.hugetlb_entry = smaps_hugetlb_range,
+#endif
 		.mm = vma->vm_mm,
 	};
 	int ret = 0;
@@ -771,6 +808,8 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
 			   "Anonymous:      %8lu kB\n"
 			   "AnonHugePages:  %8lu kB\n"
 			   "Swap:           %8lu kB\n"
+		           "Shared_Hugetlb: %8lu kB\n"
+		           "Private_Hugetlb: %7lu kB\n"
 			   "SwapPss:        %8lu kB\n"
 			   "Locked:         %8lu kB\n",
 			   mss->resident >> 10,
@@ -782,6 +821,8 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
 			   mss->referenced >> 10,
 			   mss->anonymous >> 10,
 			   mss->anonymous_thp >> 10,
+		           mss.shared_hugetlb >> 10,
+		           mss.private_hugetlb >> 10,
 			   mss->swap >> 10,
 			   (unsigned long)(mss->swap_pss >> (10 + PSS_SHIFT)),
 			   (unsigned long)(mss->pss_locked >>

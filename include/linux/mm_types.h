@@ -479,6 +479,9 @@ struct mm_struct {
 	int app_setting;
 #endif
 
+#ifdef CONFIG_HUGETLB_PAGE
+	atomic_long_t hugetlb_usage;
+#endif
 };
 
 static inline void mm_init_cpumask(struct mm_struct *mm)

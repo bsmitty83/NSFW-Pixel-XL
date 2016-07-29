@@ -1735,7 +1735,7 @@ static inline void msm_isp_update_error_info(struct vfe_device *vfe_dev,
 	vfe_dev->error_info.error_count++;
 }
 
-static void msm_isp_process_overflow_irq(
+void msm_isp_process_overflow_irq(
 	struct vfe_device *vfe_dev,
 	uint32_t *irq_status0, uint32_t *irq_status1,
 	uint32_t force_overflow)
@@ -1781,15 +1781,27 @@ static void msm_isp_process_overflow_irq(
 		/* maks off irq for current vfe */
 		atomic_cmpxchg(&vfe_dev->error_info.overflow_state,
 			NO_OVERFLOW, OVERFLOW_DETECTED);
+		vfe_dev->recovery_irq0_mask = vfe_dev->irq0_mask;
+		vfe_dev->recovery_irq1_mask = vfe_dev->irq1_mask;
+
 		vfe_dev->hw_info->vfe_ops.core_ops.
 			set_halt_restart_mask(vfe_dev);
 
 		/* mask off other vfe if dual vfe is used */
 		if (vfe_dev->is_split) {
 			uint32_t other_vfe_id;
+			struct vfe_device *other_vfe_dev;
 
 			other_vfe_id = (vfe_dev->pdev->id == ISP_VFE0) ?
 				ISP_VFE1 : ISP_VFE0;
+			other_vfe_dev = vfe_dev->common_data->
+				dual_vfe_res->vfe_dev[other_vfe_id];
+			if (other_vfe_dev) {
+			  other_vfe_dev->recovery_irq0_mask =
+				  other_vfe_dev->irq0_mask;
+			  other_vfe_dev->recovery_irq1_mask =
+				  other_vfe_dev->irq1_mask;
+			}
 
 			atomic_cmpxchg(&(vfe_dev->common_data->dual_vfe_res->
 				vfe_dev[other_vfe_id]->

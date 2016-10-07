@@ -2332,7 +2332,7 @@ int test_clear_page_writeback(struct page *page)
 	int ret;
 
 	memcg = mem_cgroup_begin_page_stat(page);
-	if (mapping) {
+	if (mapping && mapping_use_writeback_tags(mapping)) {
 		struct backing_dev_info *bdi = mapping->backing_dev_info;
 		unsigned long flags;
 
@@ -2367,7 +2367,7 @@ int __test_set_page_writeback(struct page *page, bool keep_write)
 	int ret;
 
 	memcg = mem_cgroup_begin_page_stat(page);
-	if (mapping) {
+	if (mapping && mapping_use_writeback_tags(mapping)) {
 		struct backing_dev_info *bdi = mapping->backing_dev_info;
 		unsigned long flags;
 

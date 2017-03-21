@@ -166,7 +166,6 @@ static inline int strtobool(const char *s, bool *res)
 	return kstrtobool(s, res);
 }
 int __sysfs_match_string(const char * const *array, size_t n, const char *s);
-
 /**
  * sysfs_match_string - matches given string in an array
  * @_a: array of strings

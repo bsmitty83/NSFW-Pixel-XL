@@ -423,6 +423,7 @@ EXPORT_SYMBOL_GPL(pvclock_gtod_unregister_notifier);
  */
 static inline void tk_update_ktime_data(struct timekeeper *tk)
 {
+	u64 seconds;
 	s64 nsec;
 
 	/*
@@ -921,20 +922,17 @@ int timekeeping_notify(struct clocksource *clock)
 void getrawmonotonic(struct timespec *ts)
 {
 	struct timekeeper *tk = &tk_core.timekeeper;
-	struct timespec64 ts64;
 	unsigned long seq;
 	s64 nsecs;
 
 	do {
 		seq = read_seqcount_begin(&tk_core.seq);
-		ts64.tv_sec = tk->raw_sec;
+		ts->tv_sec = tk->raw_sec;
 		nsecs = timekeeping_get_ns(&tk->tkr_raw);
 
 	} while (read_seqcount_retry(&tk_core.seq, seq));
-
-	ts64.tv_nsec = 0;
-	timespec64_add_ns(&ts64, nsecs);
-	*ts = timespec64_to_timespec(ts64);
+	ts->tv_nsec = 0;
+	timespec_add_ns(ts, nsecs);
 }
 EXPORT_SYMBOL(getrawmonotonic);
 
@@ -1517,10 +1515,8 @@ static cycle_t logarithmic_accumulation(struct timekeeper *tk, cycle_t offset,
 	snsec_per_sec = (u64)NSEC_PER_SEC << tk->tkr_raw.shift;
 	while (tk->tkr_raw.xtime_nsec >= snsec_per_sec) {
 		tk->tkr_raw.xtime_nsec -= snsec_per_sec;
-		tk->raw_time.tv_sec++;
+		tk->raw_sec++;
 	}
-	tk->raw_time.tv_nsec = tk->tkr_raw.xtime_nsec >> tk->tkr_raw.shift;
-	tk->tkr_raw.xtime_nsec -= (u64)tk->raw_time.tv_nsec << tk->tkr_raw.shift;
 
 	/* Accumulate error between NTP and clock interval */
 	tk->ntp_error += tk->ntp_tick << shift;

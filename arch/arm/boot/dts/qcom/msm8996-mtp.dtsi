@@ -47,9 +47,7 @@
 };
 
 &uartblsp2dm1 {
-	status = "ok";
-	pinctrl-names = "default";
-	pinctrl-0 = <&uart_console_active>;
+	status = "disabled";
 };
 
 &sdhc_1 {

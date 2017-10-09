@@ -1666,11 +1666,13 @@ struct super_operations {
 #define S_IMA		1024	/* Inode has an associated IMA struct */
 #define S_AUTOMOUNT	2048	/* Automount/referral quasi-directory */
 #define S_NOSEC		4096	/* no suid or xattr security attributes */
+#define S_ENCRYPTED	16384	/* Encrypted file (using fs/crypto/) */
 #ifdef CONFIG_FS_XIP
 #define S_DAX		8192	/* Direct Access, avoiding the page cache */
 #else
 #define S_DAX		0	/* Make all the DAX code disappear */
 #endif
+
 
 /*
  * Note that nosuid etc flags are inode-specific: setting some file-system
@@ -1708,7 +1710,11 @@ struct super_operations {
 #define IS_IMA(inode)		((inode)->i_flags & S_IMA)
 #define IS_AUTOMOUNT(inode)	((inode)->i_flags & S_AUTOMOUNT)
 #define IS_NOSEC(inode)		((inode)->i_flags & S_NOSEC)
+<<<<<<< HEAD
 #define IS_DAX(inode)		((inode)->i_flags & S_DAX)
+=======
+#define IS_ENCRYPTED(inode)	((inode)->i_flags & S_ENCRYPTED)
+>>>>>>> 4f2acd6d9c54... fs, fscrypt: add an S_ENCRYPTED inode flag
 
 #define IS_WHITEOUT(inode)	(S_ISCHR(inode->i_mode) && \
 				 (inode)->i_rdev == WHITEOUT_DEV)

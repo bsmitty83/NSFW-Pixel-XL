@@ -30,6 +30,7 @@
 
 #include <linux/string.h>
 
+#include <asm/cpufeature.h>
 #include <asm/fpsimd.h>
 #include <asm/hw_breakpoint.h>
 #include <asm/pgtable-hwdef.h>

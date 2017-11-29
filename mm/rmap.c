@@ -1736,7 +1736,6 @@ static int rmap_walk_file(struct page *page, struct rmap_walk_control *rwc)
 	struct address_space *mapping = page->mapping;
 	pgoff_t pgoff = page_to_pgoff(page);
 	struct vm_area_struct *vma;
-	unsigned long address;
 	int ret = SWAP_AGAIN;
 
 	/*

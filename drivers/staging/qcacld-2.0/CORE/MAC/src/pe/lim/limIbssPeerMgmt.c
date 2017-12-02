@@ -1104,11 +1104,11 @@ __limIbssSearchAndDeletePeer(tpAniSirGlobal pMac,
 				 * Send DEL STA only if ADD STA
 				 * was success i.e staid is Valid.
 				*/
-				if (HAL_STA_INVALID_IDX != staIndex)
+	if (HAL_STA_INVALID_IDX != staIndex)
 					limDelSta(pMac, pStaDs,
 						false /*asynchronous*/,
 						psessionEntry);
-					limDeleteDphHashEntry(pMac,
+	limDeleteDphHashEntry(pMac,
 							pStaDs->staAddr,
 							peerIdx, psessionEntry);
 				limReleasePeerIdx(pMac, peerIdx, psessionEntry);

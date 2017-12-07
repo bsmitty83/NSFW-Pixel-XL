@@ -431,12 +431,8 @@ void rcu_read_unlock_special(struct task_struct *t)
 		 * lowered (in which case we're left with no boosted thread
 		 * and possible RCU starvation).
 		 */
-		if (drop_boost_mutex) {
-			preempt_disable();
+		if (drop_boost_mutex) 
 			rt_mutex_unlock(&rnp->boost_mtx);
-			complete(&rnp->boost_completion);
-			preempt_enable();
-		}
 #endif /* #ifdef CONFIG_RCU_BOOST */
 
 		/*

@@ -10,3 +10,6 @@ recordmcount
 docproc
 sortextable
 asn1_compiler
+
+# WireGuard
+net/

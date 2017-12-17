@@ -26,7 +26,6 @@
 #include <linux/seq_file.h>
 #include <linux/vmalloc.h>
 #include <linux/slab.h>
-#include "binder.h"
 #include "binder_alloc.h"
 #include "binder_trace.h"
 

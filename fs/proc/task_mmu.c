@@ -509,13 +509,10 @@ struct mem_size_stats {
 	unsigned long anonymous;
 	unsigned long anonymous_thp;
 	unsigned long swap;
-<<<<<<< HEAD
 	unsigned long nonlinear;
 	unsigned long first_vma_start;
-=======
 	unsigned long shared_hugetlb;
 	unsigned long private_hugetlb;
->>>>>>> 25ee01a2fca0... mm: hugetlb: proc: add hugetlb-related fields to /proc/PID/smaps
 	u64 pss;
 	u64 pss_locked;
 	u64 swap_pss;
@@ -821,8 +818,8 @@ static int show_smap(struct seq_file *m, void *v, int is_pid)
 			   mss->referenced >> 10,
 			   mss->anonymous >> 10,
 			   mss->anonymous_thp >> 10,
-		           mss.shared_hugetlb >> 10,
-		           mss.private_hugetlb >> 10,
+		           mss->shared_hugetlb >> 10,
+		           mss->private_hugetlb >> 10,
 			   mss->swap >> 10,
 			   (unsigned long)(mss->swap_pss >> (10 + PSS_SHIFT)),
 			   (unsigned long)(mss->pss_locked >>

@@ -81,7 +81,7 @@ static bool zswap_enabled;
 module_param_named(enabled, zswap_enabled, bool, 0644);
 
 /* Crypto compressor to use */
-#define ZSWAP_COMPRESSOR_DEFAULT "lzo"
+#define ZSWAP_COMPRESSOR_DEFAULT "lz4"
 static char zswap_compressor[CRYPTO_MAX_ALG_NAME] = ZSWAP_COMPRESSOR_DEFAULT;
 static struct kparam_string zswap_compressor_kparam = {
 	.string =	zswap_compressor,

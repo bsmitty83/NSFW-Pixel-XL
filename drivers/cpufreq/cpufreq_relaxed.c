@@ -1,5 +1,5 @@
 /*
- *  drivers/cpufreq/cpufreq_chill.c
+ *  drivers/cpufreq/cpufreq_relaxed.c
  *
  *  Copyright (C)  2001 Russell King
  *            (C)  2003 Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>.
@@ -15,24 +15,26 @@
 #include <linux/slab.h>
 #include "cpufreq_governor.h"
 #include <linux/display_state.h>
+#include <linux/err.h>
 
-/* Chill version macros */
-#define CHILL_VERSION_MAJOR			(2)
-#define CHILL_VERSION_MINOR			(10)
+/* Relaxed version macros */
+#define RELAXED_VERSION_MAJOR			(1)
+#define RELAXED_VERSION_MINOR			(3)
 
-/* Chill governor macros */
-#define DEF_FREQUENCY_UP_THRESHOLD		(90)
-#define DEF_FREQUENCY_DOWN_THRESHOLD		(40)
+/* Relaxed governor macros */
+#define DEF_FREQUENCY_UP_THRESHOLD		(85)
+#define DEF_FREQUENCY_DOWN_THRESHOLD		(35)
 #define DEF_FREQUENCY_DOWN_THRESHOLD_SUSPENDED	(45)
 #define DEF_FREQUENCY_STEP			(5)
 #define DEF_SAMPLING_RATE			(20000)
-#define DEF_BOOST_ENABLED			(0)
+#define DEF_BOOST_ENABLED			(1)
 #define DEF_BOOST_COUNT				(8)
+#define DEF_BOOST_CEILING			(12)
 
 static DEFINE_PER_CPU(struct cs_cpu_dbs_info_s, cs_cpu_dbs_info);
 static DEFINE_PER_CPU(struct cs_dbs_tuners *, cached_tuners);
 
-unsigned int boost_counter = 0;
+static unsigned int boost_counter = 0;
 
 static inline unsigned int get_freq_target(struct cs_dbs_tuners *cs_tuners,
 					   struct cpufreq_policy *policy)
@@ -133,8 +135,10 @@ static void cs_check_cpu(int cpu, unsigned int load)
 
 		/* Boost if count is reached, otherwise increase freq */
 		if (cs_tuners->boost_enabled && boost_counter >= cs_tuners->boost_count) {
-			dbs_info->requested_freq = policy->max;
-			boost_counter = 0;
+			int boost_level = cs_tuners->boost_ceiling - boost_counter;
+			dbs_info->requested_freq = policy->max - boost_level;
+			if (boost_level == 0)
+				boost_counter = 0;
 		} else {
 			dbs_info->requested_freq += get_freq_target(cs_tuners, policy);
 			boost_counter++;
@@ -352,6 +356,24 @@ static ssize_t store_boost_count(struct dbs_data *dbs_data, const char *buf,
 	return count;
 }
 
+static ssize_t store_boost_ceiling(struct dbs_data *dbs_data, const char *buf,
+		size_t count)
+{
+	struct cs_dbs_tuners *cs_tuners = dbs_data->tuners;
+	unsigned int input;
+	int ret;
+	ret = sscanf(buf, "%u", &input);
+
+	if (ret != 1)
+		return -EINVAL;
+
+	if (input < 1)
+		input = 0;
+
+	cs_tuners->boost_ceiling = input;
+	return count;
+}
+
 show_store_one(cs, sampling_rate);
 show_store_one(cs, up_threshold);
 show_store_one(cs, down_threshold);
@@ -360,6 +382,7 @@ show_store_one(cs, ignore_nice_load);
 show_store_one(cs, freq_step);
 show_store_one(cs, boost_enabled);
 show_store_one(cs, boost_count);
+show_store_one(cs, boost_ceiling);
 
 gov_sys_pol_attr_rw(sampling_rate);
 gov_sys_pol_attr_rw(up_threshold);
@@ -369,6 +392,7 @@ gov_sys_pol_attr_rw(ignore_nice_load);
 gov_sys_pol_attr_rw(freq_step);
 gov_sys_pol_attr_rw(boost_enabled);
 gov_sys_pol_attr_rw(boost_count);
+gov_sys_pol_attr_rw(boost_ceiling);
 
 static struct attribute *dbs_attributes_gov_sys[] = {
 	&sampling_rate_gov_sys.attr,
@@ -379,12 +403,13 @@ static struct attribute *dbs_attributes_gov_sys[] = {
 	&freq_step_gov_sys.attr,
 	&boost_enabled_gov_sys.attr,
 	&boost_count_gov_sys.attr,
+	&boost_ceiling_gov_sys.attr,
 	NULL
 };
 
 static struct attribute_group cs_attr_group_gov_sys = {
 	.attrs = dbs_attributes_gov_sys,
-	.name = "chill",
+	.name = "relaxed",
 };
 
 static struct attribute *dbs_attributes_gov_pol[] = {
@@ -396,12 +421,13 @@ static struct attribute *dbs_attributes_gov_pol[] = {
 	&freq_step_gov_pol.attr,
 	&boost_enabled_gov_pol.attr,
 	&boost_count_gov_pol.attr,
+	&boost_ceiling_gov_pol.attr,
 	NULL
 };
 
 static struct attribute_group cs_attr_group_gov_pol = {
 	.attrs = dbs_attributes_gov_pol,
-	.name = "chill",
+	.name = "relaxed",
 };
 
 /************************** sysfs end ************************/
@@ -438,6 +464,7 @@ static struct cs_dbs_tuners *alloc_tuners(struct cpufreq_policy *policy)
 	tuners->freq_step = DEF_FREQUENCY_STEP;
 	tuners->boost_enabled = DEF_BOOST_ENABLED;
 	tuners->boost_count = DEF_BOOST_COUNT;
+	tuners->boost_ceiling = DEF_BOOST_CEILING;
 
 	save_tuners(policy, tuners);
 
@@ -507,11 +534,11 @@ static int cs_cpufreq_governor_dbs(struct cpufreq_policy *policy,
 	return cpufreq_governor_dbs(policy, &cs_dbs_cdata, event);
 }
 
-#ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_CHILL
+#ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_RELAXED
 static
 #endif
-struct cpufreq_governor cpufreq_gov_chill = {
-	.name			= "chill",
+struct cpufreq_governor cpufreq_gov_relaxed = {
+	.name			= "relaxed",
 	.governor		= cs_cpufreq_governor_dbs,
 	.max_transition_latency	= TRANSITION_LATENCY_LIMIT,
 	.owner			= THIS_MODULE,
@@ -519,14 +546,14 @@ struct cpufreq_governor cpufreq_gov_chill = {
 
 static int __init cpufreq_gov_dbs_init(void)
 {
-	return cpufreq_register_governor(&cpufreq_gov_chill);
+	return cpufreq_register_governor(&cpufreq_gov_relaxed);
 }
 
 static void __exit cpufreq_gov_dbs_exit(void)
 {
 	int cpu;
 
-	cpufreq_unregister_governor(&cpufreq_gov_chill);
+	cpufreq_unregister_governor(&cpufreq_gov_relaxed);
 	for_each_possible_cpu(cpu) {
 		kfree(per_cpu(cached_tuners, cpu));
 		per_cpu(cached_tuners, cpu) = NULL;
@@ -535,15 +562,14 @@ static void __exit cpufreq_gov_dbs_exit(void)
 
 MODULE_AUTHOR("Alexander Clouter <alex@digriz.org.uk>");
 MODULE_AUTHOR("Joe Maples <joe@frap129.org>");
-MODULE_DESCRIPTION("'cpufreq_chill' - A dynamic cpufreq governor for "
+MODULE_DESCRIPTION("'cpufreq_relaxed' - A dynamic cpufreq governor for "
 		"Low Latency Frequency Transition capable processors "
 		"optimised for use in a battery environment");
 MODULE_LICENSE("GPL");
 
-#ifdef CONFIG_CPU_FREQ_DEFAULT_GOV_CHILL
+#ifdef CONFIG_CPU_FREQ_DEFAULT_GOV_RELAXED
 fs_initcall(cpufreq_gov_dbs_init);
 #else
 module_init(cpufreq_gov_dbs_init);
 #endif
 module_exit(cpufreq_gov_dbs_exit);
-

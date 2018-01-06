@@ -23,13 +23,7 @@ inline unsigned long int_sqrt(unsigned long x)
 	if (x <= 1)
 		return x;
 
-	m = 1UL << (BITS_PER_LONG - 2);
-	while (m > x)
-		m >>= 2;
-
-	while (m != 0) {
-		b = y + m;
-		y >>= 1;
+	place = 1UL << (BITS_PER_LONG - 2);
 
 	do{
 		place >>= 2;

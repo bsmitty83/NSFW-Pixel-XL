@@ -1710,11 +1710,9 @@ struct super_operations {
 #define IS_IMA(inode)		((inode)->i_flags & S_IMA)
 #define IS_AUTOMOUNT(inode)	((inode)->i_flags & S_AUTOMOUNT)
 #define IS_NOSEC(inode)		((inode)->i_flags & S_NOSEC)
-<<<<<<< HEAD
-#define IS_DAX(inode)		((inode)->i_flags & S_DAX)
-=======
 #define IS_ENCRYPTED(inode)	((inode)->i_flags & S_ENCRYPTED)
->>>>>>> 4f2acd6d9c54... fs, fscrypt: add an S_ENCRYPTED inode flag
+#define IS_DAX(inode)		((inode)->i_flags & S_DAX)
+
 
 #define IS_WHITEOUT(inode)	(S_ISCHR(inode->i_mode) && \
 				 (inode)->i_rdev == WHITEOUT_DEV)

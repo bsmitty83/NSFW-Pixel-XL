@@ -14523,7 +14523,7 @@ static void hdd_populate_random_mac_addr(hdd_context_t *hdd_ctx, uint32_t num)
 	}
 }
 
-static int randomize_mac = 1;
+static int randomize_mac = 0;
 
 static struct ctl_table randomize_mac_table[] =
 {
@@ -14531,7 +14531,7 @@ static struct ctl_table randomize_mac_table[] =
                .procname       = "randomize_mac",
                .data           = &randomize_mac,
                .maxlen         = sizeof(int),
-               .mode           = 0600,
+               .mode           = 0660,
                .proc_handler   = proc_dointvec
        },
        { }

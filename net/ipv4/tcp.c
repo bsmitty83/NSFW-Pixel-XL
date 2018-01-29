@@ -3445,6 +3445,11 @@ restart:
 				continue;
 			}
 #endif
+			
+			if (is_meta_sk(sk)) {
+				mptcp_debug("%s, do not nuke meta sk: %p\n", __func__, sk);
+				continue;
+			}
 
 			sock_hold(sk);
 			spin_unlock_bh(lock);

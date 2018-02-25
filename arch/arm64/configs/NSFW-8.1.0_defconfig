@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/arm64 3.18.95 Kernel Configuration
+# Linux/arm64 3.18.96 Kernel Configuration
 #
 CONFIG_ARM64=y
 CONFIG_64BIT=y
@@ -4711,6 +4711,7 @@ CONFIG_CRYPTO_DES=y
 CONFIG_CRYPTO_CHACHA20=y
 # CONFIG_CRYPTO_SEED is not set
 # CONFIG_CRYPTO_SERPENT is not set
+CONFIG_CRYPTO_SPECK=y
 # CONFIG_CRYPTO_TEA is not set
 CONFIG_CRYPTO_TWOFISH=y
 CONFIG_CRYPTO_TWOFISH_COMMON=y

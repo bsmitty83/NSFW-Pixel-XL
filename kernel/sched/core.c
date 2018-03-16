@@ -1253,8 +1253,6 @@ static int migration_cpu_stop(void *data)
 	return 0;
 }
 
-<<<<<<< HEAD
-=======
 static const struct cpumask *adjust_cpumask(const struct task_struct *p,
 	const struct cpumask *old_mask)
 {

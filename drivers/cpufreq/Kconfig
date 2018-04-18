@@ -171,6 +171,20 @@ config CPU_FREQ_DEFAULT_GOV_CHILL
 
 endchoice
 
+config CPU_FREQ_DEFAULT_GOV
+	string
+	default "performance" if CPU_FREQ_DEFAULT_GOV_PERFORMANCE
+	default "powersave" if CPU_FREQ_DEFAULT_GOV_POWERSAVE
+	default "userspace" if CPU_FREQ_DEFAULT_GOV_USERSPACE
+	default "ondemand" if CPU_FREQ_DEFAULT_GOV_ONDEMAND
+	default "lionheart" if CPU_FREQ_DEFAULT_GOV_LIONHEART
+	default "conservative" if CPU_FREQ_DEFAULT_GOV_CONSERVATIVE
+	default "interactive" if CPU_FREQ_DEFAULT_GOV_INTERACTIVE
+	default "elementalx" if CPU_FREQ_DEFAULT_GOV_ELEMENTALX
+	default "blu_active" if CPU_FREQ_DEFAULT_GOV_BLU_ACTIVE
+	default "impulse" if CPU_FREQ_DEFAULT_GOV_IMPULSE
+	default "bioshock" if CPU_FREQ_DEFAULT_GOV_BIOSHOCK
+
 config CPU_FREQ_GOV_PERFORMANCE
 	tristate "'performance' governor"
 	help

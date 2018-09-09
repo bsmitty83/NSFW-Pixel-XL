@@ -603,7 +603,16 @@ static ssize_t map_write(struct file *file, const char __user *buf,
 	struct uid_gid_extent *extent = NULL;
 	unsigned long page = 0;
 	char *kbuf, *pos, *next_line;
-	ssize_t ret = -EINVAL;
+	ssize_t ret;
+
+	/* Only allow < page size writes at the beginning of the file */
+	if ((*ppos != 0) || (count >= PAGE_SIZE))
+		return -EINVAL;
+
+	/* Slurp in the user data */
+	if (copy_from_user(kbuf, buf, count))
+		return -EFAULT;
+	kbuf[count] = '\0';
 
 	/*
 	 * The userns_state_mutex serializes all writes to any given map.
@@ -643,17 +652,6 @@ static ssize_t map_write(struct file *file, const char __user *buf,
 	kbuf = (char *) page;
 	if (!page)
 		goto out;
-
-	/* Only allow <= page size writes at the beginning of the file */
-	ret = -EINVAL;
-	if ((*ppos != 0) || (count >= PAGE_SIZE))
-		goto out;
-
-	/* Slurp in the user data */
-	ret = -EFAULT;
-	if (copy_from_user(kbuf, buf, count))
-		goto out;
-	kbuf[count] = '\0';
 
 	/* Parse the user data */
 	ret = -EINVAL;

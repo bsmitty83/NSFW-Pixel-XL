@@ -601,7 +601,7 @@ static ssize_t map_write(struct file *file, const char __user *buf,
 	struct uid_gid_map new_map;
 	unsigned idx;
 	struct uid_gid_extent *extent = NULL;
-	unsigned long page = 0;
+	unsigned long page;
 	char *kbuf, *pos, *next_line;
 	ssize_t ret;
 
@@ -609,9 +609,17 @@ static ssize_t map_write(struct file *file, const char __user *buf,
 	if ((*ppos != 0) || (count >= PAGE_SIZE))
 		return -EINVAL;
 
+	/* Get a buffer */
+	page = __get_free_page(GFP_TEMPORARY);
+	kbuf = (char *) page;
+	if (!page)
+		return -ENOMEM;
+
 	/* Slurp in the user data */
-	if (copy_from_user(kbuf, buf, count))
+	if (copy_from_user(kbuf, buf, count)) {
+		free_page(page);
 		return -EFAULT;
+	}
 	kbuf[count] = '\0';
 
 	/*
@@ -644,13 +652,6 @@ static ssize_t map_write(struct file *file, const char __user *buf,
 	 * Adjusting namespace settings requires capabilities on the target.
 	 */
 	if (cap_valid(cap_setid) && !file_ns_capable(file, ns, CAP_SYS_ADMIN))
-		goto out;
-
-	/* Get a buffer */
-	ret = -ENOMEM;
-	page = __get_free_page(GFP_TEMPORARY);
-	kbuf = (char *) page;
-	if (!page)
 		goto out;
 
 	/* Parse the user data */
